@@ -70,7 +70,7 @@ server {
     <% end %>
 
     <% if proxy %>
-    proxy_pass      <% if proxy_ssl %>https://<% else %>http://<%= proxy_domain %>:<%= proxy_port %>;
+    proxy_pass      <% if proxy_ssl %>https://<% else %>http://<% end %><%= proxy_domain %>:<%= proxy_port %>;
     proxy_redirect  off;
 
     proxy_set_header   Host             $host;
