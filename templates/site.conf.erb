@@ -33,11 +33,13 @@ server {
   ssl_certificate_key <%= ssl_certificate_key %>;
   <% end %>
 
+  <% if has_variable?("root") %>
   root <%= root %>;
+  <% end %>
 
   access_log  /var/log/nginx/<%= name %>.access.log;
 
-  keepalive_timeout 5;
+  keepalive_timeout <%= timeout %>;
 
   <% unless mediaroot.empty? %>
   location = /favicon.ico {
@@ -65,6 +67,18 @@ server {
 
     <% if rewrite_missing_html_extension %>
     try_files $uri $uri/ $uri.html =404;
+    <% end %>
+
+    <% if proxy %>
+    proxy_pass      <% if proxy_ssl %>https://<% else %>http://<%= proxy_domain %>:<%= proxy_port %>;
+    proxy_redirect  off;
+
+    proxy_set_header   Host             $host;
+    proxy_set_header   X-Real-IP        $remote_addr;
+    proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+
+    proxy_max_temp_file_size    0;
+    client_body_buffer_size     128k;
     <% end %>
   }
 

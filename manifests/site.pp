@@ -1,5 +1,5 @@
-define nginx::site($domain,
-                   $root,
+define nginx::site($domain=undef,
+                   $root=undef,
                    $ensure=present,
                    $owner=undef,
                    $group=undef,
@@ -12,7 +12,12 @@ define nginx::site($domain,
                    $aliases=[],
                    $ssl=false,
                    $ssl_certificate="",
-                   $ssl_certificate_key="") {
+                   $ssl_certificate_key="",
+                   $timeout=5,
+                   $proxy=false,
+                   $proxy_ssl=false,
+                   $proxy_domain=undef,
+                   $proxy_port=undef) {
 
   $absolute_mediaroot = inline_template("<%= File.expand_path(mediaroot, root) %>")
 
