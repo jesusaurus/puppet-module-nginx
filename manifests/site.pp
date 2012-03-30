@@ -19,49 +19,54 @@ define nginx::site($domain=undef,
                    $proxy_domain=undef,
                    $proxy_port=undef) {
 
-  if $root == undef {
-    $absolute_mediaroot = ""
-  } else {
+  if $root != undef {
+
     $absolute_mediaroot = inline_template("<%= File.expand_path(mediaroot, root) %>")
-  }
 
-  if $ensure == 'present' {
-    # Parent directory of root directory. /var/www for /var/www/blog
-    $root_parent = inline_template("<%= root.match(%r!(.+)/.+!)[1] %>")
+    if $ensure == 'present' {
+      # Parent directory of root directory. /var/www for /var/www/blog
+      $root_parent = inline_template("<%= root.match(%r!(.+)/.+!)[1] %>")
 
-    if !defined(File[$root_parent]) {
-      file { $root_parent:
+      if !defined(File[$root_parent]) {
+        file { $root_parent:
+          ensure => directory,
+          owner => $owner,
+          group => $group,
+        }
+      }
+
+      file { $root:
         ensure => directory,
         owner => $owner,
         group => $group,
+        require => File[$root_parent],
+      }
+
+    } elsif $ensure == 'absent' {
+
+      file { $root:
+        ensure => $ensure,
+        owner => $owner,
+        group => $group,
+        recurse => true,
+        purge => true,
+        force => true,
       }
     }
 
-    file { $root:
-      ensure => directory,
-      owner => $owner,
-      group => $group,
-      require => File[$root_parent],
-    }
-
-  } elsif $ensure == 'absent' {
-
-    file { $root:
-      ensure => $ensure,
-      owner => $owner,
-      group => $group,
-      recurse => true,
-      purge => true,
-      force => true,
-    }
   }
 
   file {
     "/etc/nginx/sites-available/${name}.conf":
       ensure => $ensure,
       content => template("nginx/site.conf.erb"),
-      require => [File[$root],
-                  Package[nginx]],
+      require => $root ? {
+        undef   => Package[nginx],
+        default => [
+          File[$root],
+          Package[nginx],
+        ],
+      },
       notify => Service[nginx];
 
     "/etc/nginx/sites-enabled/${name}.conf":
