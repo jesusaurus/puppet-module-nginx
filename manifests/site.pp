@@ -19,7 +19,11 @@ define nginx::site($domain=undef,
                    $proxy_domain=undef,
                    $proxy_port=undef) {
 
-  $absolute_mediaroot = inline_template("<%= File.expand_path(mediaroot, root) %>")
+  if $root == undef {
+    $absolute_mediaroot = ""
+  } else {
+    $absolute_mediaroot = inline_template("<%= File.expand_path(mediaroot, root) %>")
+  }
 
   if $ensure == 'present' {
     # Parent directory of root directory. /var/www for /var/www/blog
