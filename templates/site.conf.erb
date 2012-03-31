@@ -39,7 +39,7 @@ server {
 
   access_log  /var/log/nginx/<%= name %>.access.log;
 
-  keepalive_timeout <%= timeout %>;
+  keepalive_timeout <%= keepalive %>;
 
   <% unless mediaroot.empty? %>
   location = /favicon.ico {
