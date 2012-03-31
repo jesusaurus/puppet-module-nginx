@@ -20,7 +20,8 @@ define nginx::site($domain=undef,
                    $proxy_port=undef,
                    $passenger=false,
                    $passenger_root=undef,
-                   $passenger_ruby=undef) {
+                   $passenger_ruby=undef,
+                   $content=undef) {
 
   if $root != undef {
 
@@ -62,7 +63,10 @@ define nginx::site($domain=undef,
   file {
     "/etc/nginx/sites-available/${name}.conf":
       ensure => $ensure,
-      content => template("nginx/site.conf.erb"),
+      content => $content ? {
+        undef   => template("nginx/site.conf.erb"),
+        default => $content,
+      },
       require => $root ? {
         undef   => Package[nginx],
         default => [
