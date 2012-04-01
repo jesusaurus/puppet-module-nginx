@@ -18,9 +18,6 @@ define nginx::site($domain=undef,
                    $proxy_ssl=false,
                    $proxy_domain=undef,
                    $proxy_port=undef,
-                   $passenger=false,
-                   $passenger_root=undef,
-                   $passenger_ruby=undef,
                    $content=undef) {
 
   if $root != undef {

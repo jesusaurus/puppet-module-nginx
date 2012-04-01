@@ -1,4 +1,9 @@
-class nginx($workers=1, $ensure=present) {
+class nginx($workers=1,
+            $ensure=present,
+            $passenger=false,
+            $passenger_root=undef,
+            $passenger_ruby=undef) {
+
   $is_present = $ensure == "present"
 
   package { nginx:
