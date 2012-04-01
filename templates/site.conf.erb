@@ -6,7 +6,7 @@ server {
 }
 <% end %>
 
-<% if ssl %>
+<% if ssl and not has_variable?("port") %>
 server {
   listen 80;
   server_name <%= domain %>;
@@ -23,18 +23,23 @@ upstream <%= name %> {
 <% end %>
 
 server {
-  listen <% if ssl %>443<% else %>80<% end %><% if default_vhost %> default deferred<% end %>;
+  listen <% if has_variable?("port") %><%= port %><% elsif ssl %>443<% else %>80<% end %><% if default_vhost %> default deferred<% end %>;
   client_max_body_size 4G;
   server_name <%= domain %>;
-
-  <% if ssl %>
-  ssl on;
-  ssl_certificate <%= ssl_certificate %>;
-  ssl_certificate_key <%= ssl_certificate_key %>;
-  <% end %>
-
   <% if has_variable?("root") %>
   root <%= root %>;
+  <% end %>
+
+  <% if ssl %>
+  ssl                     on;
+  ssl_certificate         <%= ssl_certificate %>;
+  ssl_certificate_key     <%= ssl_certificate_key %>;
+  ssl_session_timeout     <%= ssl_timeout %>;
+  <% if has_variable?("ssl_client") %>
+  ssl_client_certificate  <%= ssl_client_certificate %>;
+  ssl_crl                 <%= ssl_client_certificate %>;
+  ssl_verify_client       <%= ssl_client %>;
+  <% end %>
   <% end %>
 
   access_log  /var/log/nginx/<%= name %>.access.log;
