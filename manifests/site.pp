@@ -57,31 +57,53 @@ define nginx::site($domain=undef,
 
   }
 
-  # If this logic is put inside the resource, puppet parser barfs
+  # This logic can't be inside the resource declaration,
+  # so we need a separate resource declaration for each case.
   if $source != undef {
-    $key = 'source'
-    $value = $source
+    file {
+      "/etc/nginx/sites-available/${name}.conf":
+        ensure => $ensure,
+        source => $source,
+        require => $root ? {
+          undef   => Package[nginx],
+          default => [
+            File[$root],
+            Package[nginx],
+          ],
+        },
+        notify => Service[nginx];
+    }
   } elsif $content != undef {
-    $key = 'content'
-    $value = $content
+    file {
+      "/etc/nginx/sites-available/${name}.conf":
+        ensure => $ensure,
+        content => $content,
+        require => $root ? {
+          undef   => Package[nginx],
+          default => [
+            File[$root],
+            Package[nginx],
+          ],
+        },
+        notify => Service[nginx];
+    }
   } else {
-    $key = 'content'
-    $value = template("nginx/site.conf.erb")
+    file {
+      "/etc/nginx/sites-available/${name}.conf":
+        ensure => $ensure,
+        content => template("nginx/site.conf.erb"),
+        require => $root ? {
+          undef   => Package[nginx],
+          default => [
+            File[$root],
+            Package[nginx],
+          ],
+        },
+        notify => Service[nginx];
+    }
   }
 
   file {
-    "/etc/nginx/sites-available/${name}.conf":
-      ensure => $ensure,
-      $key => $value,
-      require => $root ? {
-        undef   => Package[nginx],
-        default => [
-          File[$root],
-          Package[nginx],
-        ],
-      },
-      notify => Service[nginx];
-
     "/etc/nginx/sites-enabled/${name}.conf":
       ensure => $ensure ? {
         'present' => link,
