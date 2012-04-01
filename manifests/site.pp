@@ -57,13 +57,22 @@ define nginx::site($domain=undef,
 
   }
 
+  # If this logic is put inside the resource, puppet parser barfs
+  if $source != undef {
+    $key = 'source'
+    $value = $source
+  } elsif $content != undef {
+    $key = 'content'
+    $value = $content
+  } else {
+    $key = 'content'
+    $value = template("nginx/site.conf.erb")
+  }
+
   file {
     "/etc/nginx/sites-available/${name}.conf":
       ensure => $ensure,
-      content => $content ? {
-        undef   => template("nginx/site.conf.erb"),
-        default => $content,
-      },
+      $key => $value,
       require => $root ? {
         undef   => Package[nginx],
         default => [
