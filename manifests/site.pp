@@ -25,7 +25,7 @@ define nginx::site($domain=undef,
                    $source=undef,
                    $content=undef) {
 
-  if $root != undef {
+  if $root {
 
     $absolute_mediaroot = inline_template("<%= File.expand_path(mediaroot, root) %>")
 
@@ -64,7 +64,9 @@ define nginx::site($domain=undef,
 
   # This logic can't be inside the resource declaration,
   # so we need a separate resource declaration for each case.
-  if $source != undef {
+  if $source and $content {
+    err("Both source and content provided")
+  } elsif $source {
     file {
       "/etc/nginx/sites-available/${name}.conf":
         ensure => $ensure,
@@ -78,7 +80,7 @@ define nginx::site($domain=undef,
         },
         notify => Service[nginx];
     }
-  } elsif $content != undef {
+  } elsif $content {
     file {
       "/etc/nginx/sites-available/${name}.conf":
         ensure => $ensure,
