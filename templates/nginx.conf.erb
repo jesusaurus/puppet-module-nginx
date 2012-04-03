@@ -23,7 +23,7 @@ http {
   tcp_nopush on;
   tcp_nodelay off;
   server_names_hash_bucket_size 64;
-<% if passenger -%>
+<% if passenger != :undef -%>
   passenger_root <%= passenger_root.sub(/;?$/, ';') %>
   passenger_ruby <%= passenger_ruby.sub(/;?$/, ';') %>
 <% end -%>
