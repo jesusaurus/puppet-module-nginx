@@ -46,7 +46,8 @@ server {
 
   keepalive_timeout <%= keepalive %>;
 
-  <% unless mediaroot.empty? %>
+  <% unless mediaroot.empty? -%>
+  <% absolute_mediaroot = File.expand_path(mediaroot, root) -%>
   location = /favicon.ico {
     alias <%= absolute_mediaroot %>/favicon.ico;
     access_log off;
@@ -57,7 +58,7 @@ server {
     expires max;
     access_log off;
   }
-  <% end %>
+  <% end -%>
 
   location / {
 

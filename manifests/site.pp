@@ -1,126 +1,103 @@
-define nginx::site($domain=undef,
-                   $port=undef,
-                   $root=undef,
-                   $ensure=present,
-                   $owner=undef,
-                   $group=undef,
-                   $mediaroot="",
-                   $mediaprefix="",
-                   $default_vhost=false,
-                   $autoindex=false,
-                   $rewrite_missing_html_extension=false,
-                   $upstreams=[],
-                   $aliases=[],
-                   $ssl=false,
-                   $ssl_certificate="",
-                   $ssl_certificate_key="",
-                   $ssl_timeout="5m",
-                   $ssl_client=undef,
-                   $ssl_client_certificate=undef,
-                   $keepalive=5,
-                   $proxy=false,
-                   $proxy_ssl=false,
-                   $proxy_domain=undef,
-                   $proxy_port=undef,
-                   $source=undef,
-                   $content=undef) {
+define nginx::site (
+  $aliases                        = [],
+  $autoindex                      = false,
+  $content                        = undef,
+  $default_vhost                  = false,
+  $domain                         = undef,
+  $ensure                         = present,
+  $group                          = '0',
+  $keepalive                      = '5',
+  $mediaprefix                    = '',
+  $mediaroot                      = '',
+  $owner                          = '0',
+  $port                           = undef,
+  $proxy                          = false,
+  $proxy_domain                   = undef,
+  $proxy_port                     = undef,
+  $proxy_ssl                      = false,
+  $rewrite_missing_html_extension = false,
+  $root                           = undef,
+  $source                         = undef,
+  $ssl                            = false,
+  $ssl_certificate                = '',
+  $ssl_certificate_key            = '',
+  $ssl_client                     = undef,
+  $ssl_client_certificate         = undef,
+  $ssl_timeout                    = '5m',
+  $upstreams                      = []
+) {
+  include nginx
+  include nginx::params
+
+  $site_file = "${nginx::params::nginx_sitesdir}/${name}.conf"
+
+  File {
+    owner => $owner,
+    group => $group,
+  }
+
+  if $source and $content {
+    fail ('Both source and content supplied; please supply only one or the other')
+  }
+
+  if !($ensure in [present, 'present', absent, 'absent']) {
+    fail ("Invalid ensure value: $ensure. Must be absent or present.")
+  }
+
+  if $ensure in [absent, 'absent'] {
+    $config_type  = 'absent'
+  } elsif $source {
+    $config_type  = 'source'
+    $source_line  = $source
+  } elsif $content {
+    $config_type  = 'content'
+    $content_line = $content
+  } else {
+    $config_type  = 'template'
+    $content_line = template('nginx/site.conf.erb')
+  }
 
   if $root {
-
-    $absolute_mediaroot = inline_template("<%= File.expand_path(mediaroot, root) %>")
-
-    if $ensure == 'present' {
-      # Parent directory of root directory. /var/www for /var/www/blog
-      $root_parent = inline_template("<%= root.match(%r!(.+)/.+!)[1] %>")
-
-      if !defined(File[$root_parent]) {
-        file { $root_parent:
-          ensure => directory,
-          owner => $owner,
-          group => $group,
+    case $config_type {
+      'absent': {
+        file { $root:
+          ensure  => $ensure,
+          recurse => true,
+          purge   => true,
+          force   => true,
         }
       }
-
-      file { $root:
-        ensure => directory,
-        owner => $owner,
-        group => $group,
-        require => File[$root_parent],
-      }
-
-    } elsif $ensure == 'absent' {
-
-      file { $root:
-        ensure => $ensure,
-        owner => $owner,
-        group => $group,
-        recurse => true,
-        purge => true,
-        force => true,
+      default: {
+        $root_parent = split($root, '/[^/]+/?$')
+        if !defined(File[$root_parent]) {
+          file { $root_parent:
+            ensure => directory,
+          }
+        }
+        file { $root:
+          ensure => directory,
+        }
       }
     }
-
   }
 
-  # This logic can't be inside the resource declaration,
-  # so we need a separate resource declaration for each case.
-  if $source and $content {
-    err("Both source and content provided")
-  } elsif $source {
-    file {
-      "/etc/nginx/sites-available/${name}.conf":
-        ensure => $ensure,
-        source => $source,
-        require => $root ? {
-          undef   => Package[nginx],
-          default => [
-            File[$root],
-            Package[nginx],
-          ],
-        },
-        notify => Service[nginx];
+  case $config_type {
+    'source': {
+      file { $site_file:
+        ensure  => $ensure,
+        source  => $source_line,
+        require => Package['nginx'],
+        notify  => Service['nginx'],
+      }
     }
-  } elsif $content {
-    file {
-      "/etc/nginx/sites-available/${name}.conf":
-        ensure => $ensure,
-        content => $content,
-        require => $root ? {
-          undef   => Package[nginx],
-          default => [
-            File[$root],
-            Package[nginx],
-          ],
-        },
-        notify => Service[nginx];
-    }
-  } else {
-    file {
-      "/etc/nginx/sites-available/${name}.conf":
-        ensure => $ensure,
-        content => template("nginx/site.conf.erb"),
-        require => $root ? {
-          undef   => Package[nginx],
-          default => [
-            File[$root],
-            Package[nginx],
-          ],
-        },
-        notify => Service[nginx];
+    default: {
+      file { $site_file:
+        ensure  => $ensure,
+        content => $content_line,
+        require => Package['nginx'],
+        notify  => Service['nginx'],
+      }
     }
   }
 
-  file {
-    "/etc/nginx/sites-enabled/${name}.conf":
-      ensure => $ensure ? {
-        'present' => link,
-        'absent' => $ensure,
-      },
-      target => $ensure ? {
-        'present' => "/etc/nginx/sites-available/${name}.conf",
-        'absent' => notlink,
-      },
-      require => File["/etc/nginx/sites-available/${name}.conf"],
-      notify => Service[nginx];
-  }
 }
