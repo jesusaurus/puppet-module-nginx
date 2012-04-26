@@ -10,7 +10,7 @@ define nginx::site (
   $mediaprefix                    = '',
   $mediaroot                      = '',
   $owner                          = '0',
-  $port                           = undef,
+  $port                           = 80,
   $proxy                          = false,
   $proxy_domain                   = undef,
   $proxy_port                     = undef,

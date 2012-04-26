@@ -18,6 +18,6 @@ class nginx::params {
     }
   }
 
-  $nginx_sitesdir = "${confdir}/sites"
+  $nginx_sitesdir = "$nginx_confdir/sites"
 
 }
